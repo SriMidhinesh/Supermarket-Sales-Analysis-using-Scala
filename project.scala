@@ -1,172 +1,98 @@
-import breeze.linalg.DenseVector
-import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SparkSession, DataFrame}
+import org.apache.spark.sql.functions._
 import org.apache.spark.rdd.RDD
-import scala.collection.mutable.Map
 
-object project {
+object Project {
 
-  val sc = new SparkContext("local", "term")
-  val lines = sc.textFile(path = "D:\\Users\\pobba\\Downloads\\supermarket_sales - Sheet1.csv")
+  // Initialize Spark session
+  val spark = SparkSession.builder
+    .appName("SupermarketAnalysis")
+    .master("local")
+    .getOrCreate()
+  
+  // Read CSV file into a DataFrame, define schema based on file structure
+  val filePath = "D:\\Users\\pobba\\Downloads\\supermarket_sales - Sheet1.csv"
+  val data = spark.read
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .csv(filePath)
 
-  val data = lines.filter(line => !line.startsWith("Invoice ID"))
-  //data.foreach(println)
+  data.createOrReplaceTempView("sales") // Register as temporary table
 
-  def averageRating(data_1: RDD[String]): Double = {
-
-    val a = data_1.map(line => line.split(",")(16).toDouble)
-    val b = a.reduce((a, b) => a + b)
-    val ratingCount = a.count()
-    val averageRating = b / ratingCount
-
-    averageRating
-
+  // 1. Calculate Average Rating using SQL
+  def averageRating(): Unit = {
+    val result = spark.sql("SELECT AVG(Rating) as AverageRating FROM sales")
+    result.show()
   }
 
-  def totalSales(data_2:RDD[String]):Double = {
-
-    val totalSales = data_2.map(line => line.split(",")(9).toDouble)
-    val total = totalSales.sum()
-
-    total
-
+  // 2. Calculate Total Sales using SQL
+  def totalSales(): Unit = {
+    val result = spark.sql("SELECT SUM(Total) as TotalSales FROM sales")
+    result.show()
   }
 
-  def noOfCustomers(data_3: RDD[String]): Unit = {
-
-    val customerCounts = data_3.map(line => line.split(",")(3))
-      .countByValue()
-    customerCounts.foreach { case (customer_type, count) =>
-      println(s"Gender: $customer_type, Count: $count")
-    }
-
+  // 3. Number of Customers by Type using SQL
+  def noOfCustomers(): Unit = {
+    val result = spark.sql("SELECT Customer_type, COUNT(*) as Count FROM sales GROUP BY Customer_type")
+    result.show()
   }
 
-  def calculateGenderDistribution(data_4: RDD[String]): Unit = {
-    val genderDistribution = data_4.map(line => line.split(",")(4)).countByValue()
-    genderDistribution.foreach { case (gender, count) =>
-      println(s"Gender: $gender, Count: $count")
-    }
+  // 4. Calculate Gender Distribution using SQL
+  def calculateGenderDistribution(): Unit = {
+    val result = spark.sql("SELECT Gender, COUNT(*) as Count FROM sales GROUP BY Gender")
+    result.show()
   }
 
-  def productTypeCount(data_5: RDD[String]): Unit = {
-
-        val productLines = data_5.map(line => line.split(",")(5)).countByValue()
-        print(productLines)
-        productLines.foreach { case (producttype, count) =>
-          println(s"producttype:$producttype,Count: $count")
-        }
-
+  // 5. Count Product Types using SQL
+  def productTypeCount(): Unit = {
+    val result = spark.sql("SELECT Product_line, COUNT(*) as Count FROM sales GROUP BY Product_line")
+    result.show()
   }
 
-  def salesByCity(data_6:RDD[String]):Unit = {
-
-    val salesByCity = data_6.map(_.split(","))
-          .groupBy(_(2))
-          .map { case (city, sales) =>
-            val totalSales = sales.map(_(9).toDouble).sum
-            (city, totalSales)
-          }
-
-        salesByCity.foreach { case (city, totalSales) =>
-          println(s"City: $city, Total Sales: $totalSales")
-        }
-
+  // 6. Calculate Sales by City using SQL
+  def salesByCity(): Unit = {
+    val result = spark.sql("SELECT City, SUM(Total) as TotalSales FROM sales GROUP BY City")
+    result.show()
   }
 
-  def paymentMethodCount(data_7:RDD[String]): Unit = {
-
-    val paymentMethodCounts = data_7.map(line => line.split(",")(12))
-          .countByValue()
-        paymentMethodCounts.foreach { case (paymentMethod, count) => println(s"Payment ID: $paymentMethod - Count: $count")
-        }
-
+  // 7. Count Payment Methods using SQL
+  def paymentMethodCount(): Unit = {
+    val result = spark.sql("SELECT Payment, COUNT(*) as Count FROM sales GROUP BY Payment")
+    result.show()
   }
 
-  def salesByProductLine(data_8:RDD[String]): Unit = {
-
-    val productSales = data_8.map(line => {
-            val values = line.split(",")
-            val productLine = values(5)
-            val totalSales = values(9).toDouble
-            (productLine, totalSales)
-          })
-
-          val salesByProductLine = productSales.groupBy(_._1) // Group by product line
-
-          salesByProductLine.foreach { case (productLine, sales) =>
-            val totalSales = sales.map(_._2).sum
-            println(s"Product Line: $productLine, Total Sales: $totalSales")
-          }
-
+  // 8. Calculate Sales by Product Line using SQL
+  def salesByProductLine(): Unit = {
+    val result = spark.sql("SELECT Product_line, SUM(Total) as TotalSales FROM sales GROUP BY Product_line")
+    result.show()
   }
 
-  def salesByCustomerType(data_9:RDD[String]): Unit = {
-
-    val SalesbyCustomertype = data.map(line => {
-            val values = line.split(",")
-            val customertype = values(3)
-            val Sales = values(9).toDouble
-            (customertype, Sales)
-          })
-
-          val total_sales = SalesbyCustomertype.groupBy(_._1)
-
-          total_sales.foreach { case (customer, totalsales) =>
-            val totalSales = totalsales.map(_._2).sum
-            println(s"Customer Type: $customer - Total Sales: $totalSales")
-          }
-
+  // 9. Sales by Customer Type using SQL
+  def salesByCustomerType(): Unit = {
+    val result = spark.sql("SELECT Customer_type, SUM(Total) as TotalSales FROM sales GROUP BY Customer_type")
+    result.show()
   }
 
-  def branchSalesByCity(data_10:RDD[String]):Unit = {
-
-        val branchSales = data_10.map(line => {
-          val values = line.split(",")
-          val branch = values(1)
-          val city = values(2)
-          val totalSales = values(9).toDouble
-          (branch, city, totalSales)
-        })
-
-        val branchSalesByCity = branchSales.groupBy(_._2) // Group by city
-
-        branchSalesByCity.foreach { case (city, citySales) =>
-          println(s"City: $city")
-          val branchSales = citySales.groupBy(_._1) // Group by branch within the city
-          branchSales.foreach { case (branch, sales) =>
-            val totalSales = sales.map(_._3).sum
-            println(s"Branch: $branch - Total Sales: $totalSales")
-          }
-        }
-
+  // 10. Branch Sales by City using SQL
+  def branchSalesByCity(): Unit = {
+    val result = spark.sql("SELECT City, Branch, SUM(Total) as TotalSales FROM sales GROUP BY City, Branch")
+    result.show()
   }
-
-
 
   def main(args: Array[String]): Unit = {
+    // Run the functions
+    averageRating()
+    totalSales()
+    noOfCustomers()
+    calculateGenderDistribution()
+    productTypeCount()
+    salesByCity()
+    paymentMethodCount()
+    salesByProductLine()
+    salesByCustomerType()
+    branchSalesByCity()
 
-    println(averageRating(data))
-    println(totalSales(data))
-    noOfCustomers(data)
-    calculateGenderDistribution(data)
-    productTypeCount(data)
-    salesByCity(data)
-    paymentMethodCount(data)
-    salesByProductLine(data)
-    salesByCustomerType(data)
-    branchSalesByCity(data)
-
-
-    val paymentMethod=data.map(line => line.split(",")(12).toDouble).collect()
-
-    val H=breeze.plot.hist(DenseVector(paymentMethod))
-    val f=breeze.plot.Figure()
-    val plt=f.subplot(0)
-    plt+=H
-    plt.xlabel = "Payment Method"
-    plt.ylabel = "Frequency"
-    plt.title = "Payment Method Distribution"
-    f.refresh()
-
+    // Stop the Spark session
+    spark.stop()
   }
 }
