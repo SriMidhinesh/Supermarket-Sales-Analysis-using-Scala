@@ -19,78 +19,91 @@ object Project {
 
   data.createOrReplaceTempView("sales") // Register as temporary table
 
-  // 1. Calculate Average Rating using SQL
-  def averageRating(): Unit = {
-    val result = spark.sql("SELECT AVG(Rating) as AverageRating FROM sales")
+  // Advanced SQL Queries
+  def topProductsByQuantity(): Unit = {
+    val result = spark.sql(
+      """SELECT Product_line, SUM(Quantity) AS TotalQuantity
+        |FROM sales
+        |GROUP BY Product_line
+        |ORDER BY TotalQuantity DESC
+        |LIMIT 5""".stripMargin)
     result.show()
   }
 
-  // 2. Calculate Total Sales using SQL
-  def totalSales(): Unit = {
-    val result = spark.sql("SELECT SUM(Total) as TotalSales FROM sales")
+  def highestRevenueBranch(): Unit = {
+    val result = spark.sql(
+      """SELECT Branch, SUM(Total) AS TotalRevenue
+        |FROM sales
+        |GROUP BY Branch
+        |ORDER BY TotalRevenue DESC
+        |LIMIT 1""".stripMargin)
     result.show()
   }
 
-  // 3. Number of Customers by Type using SQL
-  def noOfCustomers(): Unit = {
-    val result = spark.sql("SELECT Customer_type, COUNT(*) as Count FROM sales GROUP BY Customer_type")
+  def peakSalesTime(): Unit = {
+    val result = spark.sql(
+      """SELECT HOUR(Time) AS Hour, SUM(Total) AS TotalSales
+        |FROM sales
+        |GROUP BY HOUR(Time)
+        |ORDER BY TotalSales DESC""".stripMargin)
     result.show()
   }
 
-  // 4. Calculate Gender Distribution using SQL
-  def calculateGenderDistribution(): Unit = {
-    val result = spark.sql("SELECT Gender, COUNT(*) as Count FROM sales GROUP BY Gender")
+  def salesTrendsOverTime(): Unit = {
+    val result = spark.sql(
+      """SELECT Date, SUM(Total) AS DailySales
+        |FROM sales
+        |GROUP BY Date
+        |ORDER BY Date""".stripMargin)
     result.show()
   }
 
-  // 5. Count Product Types using SQL
-  def productTypeCount(): Unit = {
-    val result = spark.sql("SELECT Product_line, COUNT(*) as Count FROM sales GROUP BY Product_line")
+  def genderBasedProductPreferences(): Unit = {
+    val result = spark.sql(
+      """SELECT Gender, Product_line, COUNT(*) AS Count
+        |FROM sales
+        |GROUP BY Gender, Product_line
+        |ORDER BY Gender, Count DESC""".stripMargin)
     result.show()
   }
 
-  // 6. Calculate Sales by City using SQL
-  def salesByCity(): Unit = {
-    val result = spark.sql("SELECT City, SUM(Total) as TotalSales FROM sales GROUP BY City")
+  def topPaymentMethodsByProductLine(): Unit = {
+    val result = spark.sql(
+      """SELECT Product_line, Payment, COUNT(*) AS PaymentCount
+        |FROM sales
+        |GROUP BY Product_line, Payment
+        |ORDER BY Product_line, PaymentCount DESC""".stripMargin)
     result.show()
   }
 
-  // 7. Count Payment Methods using SQL
-  def paymentMethodCount(): Unit = {
-    val result = spark.sql("SELECT Payment, COUNT(*) as Count FROM sales GROUP BY Payment")
+  def profitMarginByProductLine(): Unit = {
+    val result = spark.sql(
+      """SELECT Product_line, AVG(`gross margin percentage`) AS AvgMargin
+        |FROM sales
+        |GROUP BY Product_line
+        |ORDER BY AvgMargin DESC""".stripMargin)
     result.show()
   }
 
-  // 8. Calculate Sales by Product Line using SQL
-  def salesByProductLine(): Unit = {
-    val result = spark.sql("SELECT Product_line, SUM(Total) as TotalSales FROM sales GROUP BY Product_line")
-    result.show()
-  }
-
-  // 9. Sales by Customer Type using SQL
-  def salesByCustomerType(): Unit = {
-    val result = spark.sql("SELECT Customer_type, SUM(Total) as TotalSales FROM sales GROUP BY Customer_type")
-    result.show()
-  }
-
-  // 10. Branch Sales by City using SQL
-  def branchSalesByCity(): Unit = {
-    val result = spark.sql("SELECT City, Branch, SUM(Total) as TotalSales FROM sales GROUP BY City, Branch")
+  def cityWiseRatingAverages(): Unit = {
+    val result = spark.sql(
+      """SELECT City, AVG(Rating) AS AverageRating
+        |FROM sales
+        |GROUP BY City
+        |ORDER BY AverageRating DESC""".stripMargin)
     result.show()
   }
 
   def main(args: Array[String]): Unit = {
-    // Run the functions
-    averageRating()
-    totalSales()
-    noOfCustomers()
-    calculateGenderDistribution()
-    productTypeCount()
-    salesByCity()
-    paymentMethodCount()
-    salesByProductLine()
-    salesByCustomerType()
-    branchSalesByCity()
+    // Run the basic and advanced functions
+    topProductsByQuantity()
+    highestRevenueBranch()
+    peakSalesTime()
+    salesTrendsOverTime()
+    genderBasedProductPreferences()
+    topPaymentMethodsByProductLine()
+    profitMarginByProductLine()
+    cityWiseRatingAverages()
 
     // Stop the Spark session
     spark.stop()
