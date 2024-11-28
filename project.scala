@@ -11,7 +11,7 @@ object Project {
     .getOrCreate()
   
   // Read CSV file into a DataFrame, define schema based on file structure
-  val filePath = "D:\\Users\\pobba\\Downloads\\supermarket_sales - Sheet1.csv"
+  val filePath = "include your own file path"
   val data = spark.read
     .option("header", "true")
     .option("inferSchema", "true")
