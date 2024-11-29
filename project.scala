@@ -94,7 +94,6 @@ object Project {
   }
 
   def main(args: Array[String]): Unit = {
-    // Run the basic and advanced functions
     topProductsByQuantity()
     highestRevenueBranch()
     peakSalesTime()
