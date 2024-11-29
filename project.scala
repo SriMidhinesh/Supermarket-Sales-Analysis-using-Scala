@@ -19,7 +19,6 @@ object Project {
 
   data.createOrReplaceTempView("sales") // Register as temporary table
 
-  // Advanced SQL Queries
   def topProductsByQuantity(): Unit = {
     val result = spark.sql(
       """SELECT Product_line, SUM(Quantity) AS TotalQuantity
